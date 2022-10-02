@@ -13,7 +13,8 @@ struct Vect2D final
 {
     double x, y;
 
-    explicit Vect2D(const double X =0.0, const double Y =0.0) noexcept : x(X), y(Y) {}
+    Vect2D() noexcept : x(0.0), y(0.0) {}
+    Vect2D(const double X, const double Y) noexcept : x(X), y(Y) {}
 
     Vect2D operator+=(const Vect2D& other) noexcept
        {

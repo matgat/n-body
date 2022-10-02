@@ -16,7 +16,7 @@ class Universe final
     using Vect = Vect2D;
     using Body = Body<Vect>;
 
-    Universe(const double g) noexcept : G(g)
+    Universe(const double g) noexcept : G(g), t(0.0)
        {
         i_bodies.reserve(8);
        }
@@ -30,6 +30,7 @@ class Universe final
             ibody->evolve_speed(dt);
             ibody->evolve_position(dt);
            }
+        t += dt;
        }
 
     void evolve_verlet(const double dt) noexcept
@@ -46,7 +47,10 @@ class Universe final
             ibody->apply_force(f);
             ibody->evolve_speed(dt/2);
            }
+        t += dt;
        }
+
+    [[nodiscard]] double time() const noexcept { return t; }
 
     [[nodiscard]] double kinetic_energy() const noexcept
        {// K = ∑ ½ m·V²
@@ -104,6 +108,7 @@ class Universe final
 
  private:
     std::vector<Body> i_bodies;
+    double t; // [time] Elapsed time
 };
 
 

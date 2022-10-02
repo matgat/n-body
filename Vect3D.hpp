@@ -13,7 +13,8 @@ struct Vect3D final
 {
     double x, y, z;
 
-    explicit Vect3D(const double X =0.0, const double Y =0.0, const double Z =0.0) noexcept : x(X), y(Y), z(Z) {}
+    Vect3D() noexcept : x(0.0), y(0.0), z(0.0) {}
+    Vect3D(const double X, const double Y, const double Z) noexcept : x(X), y(Y), z(Z) {}
 
     Vect3D operator+=(const Vect3D& other) noexcept
        {
