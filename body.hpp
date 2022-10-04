@@ -8,10 +8,10 @@
 
 
 ////////////////////////////////////////////////////////////////////////
-template<class Vect> class Body final
+template<class Vect> class Body_t final
 {
  public:
-    Body(const double m, const Vect& pos, const Vect& spd)
+    Body_t(const double m, const Vect& pos, const Vect& spd)
       : i_mass(m)
       , i_pos(pos)
       , i_spd(spd)
@@ -27,7 +27,7 @@ template<class Vect> class Body final
     [[nodiscard]] const Vect& speed() const noexcept { return i_spd; }
     [[nodiscard]] const Vect& acceleration() const noexcept { return i_acc; }
 
-    Vect distance_from(const Body& other) const noexcept
+    Vect distance_from(const Body_t& other) const noexcept
        {
         return position() - other.position();
        }
@@ -37,14 +37,14 @@ template<class Vect> class Body final
         return 0.5 * i_mass * i_spd.norm2();
        }
 
-    [[nodiscard]] Vect gravitational_force_on(const Body& other, const double G) const noexcept
+    [[nodiscard]] Vect gravitational_force_on(const Body_t& other, const double G) const noexcept
        {// G · M·m / d²
         const Vect disp = distance_from(other);
         const double d = disp.norm();
         return math::ratio(G * mass() * other.mass(), d*d*d) * disp;
        }
 
-    [[nodiscard]] double gravitational_energy_with(const Body& other, const double G) const noexcept
+    [[nodiscard]] double gravitational_energy_with(const Body_t& other, const double G) const noexcept
        {// U = -G · mi·mj / d
         const double d = distance_from(other).norm();
         return math::ratio(-G * mass() * other.mass(), d);

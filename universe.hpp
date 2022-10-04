@@ -14,7 +14,7 @@ class Universe final
 {
  public:
     using Vect = Vect2D;
-    using Body = Body<Vect>;
+    using Body = Body_t<Vect>;
 
     Universe(const double g) noexcept : G(g), t(0.0)
        {
@@ -97,9 +97,10 @@ class Universe final
         return f;
        }
 
-    const auto& add_body(const double m, const Vect& pos, const Vect& spd)
+    [[maybe_unused]] Universe& add_body(const double m, const Vect& pos, const Vect& spd)
        {
-        return i_bodies.emplace_back(m,pos,spd);
+        i_bodies.emplace_back(m,pos,spd);
+        return *this;
        }
 
     [[nodiscard]] const std::vector<Body>& bodies() const noexcept { return i_bodies; }

@@ -1,8 +1,27 @@
+#include <array>
+#include <algorithm> // std::clamp
 #include <chrono> // std::chrono::*
 #include <fmt/core.h> // fmt::*
+#include <fmt/color.h> // fmt::color::*
 #include <SFML/Graphics.hpp>
 
 #include "universe.hpp" // Universe
+
+//----------------------------------------------------------------------
+sf::Color get_body_color(const double mass)
+{
+    const auto colors = std::array
+       {
+        sf::Color::Blue,
+        sf::Color::Green,
+        sf::Color::Red,
+        sf::Color::Yellow
+       };
+    const std::size_t idx = std::clamp(static_cast<std::size_t>(mass/200.0),
+                                       static_cast<std::size_t>(0u),
+                                       static_cast<std::size_t>(colors.size()-1));
+    return colors[idx];
+}
 
 //----------------------------------------------------------------------
 int main()
@@ -10,36 +29,44 @@ int main()
     // Creating a universe with a certain gravitational constant
     Universe universe(1); // Our universe: 6.67408E-11 m³/kg s²
     // Adding bodies (mass, initial position and speed)
-    const auto& b1 = universe.add_body(500, {500,400}, {0,0});
-    const auto& b2 = universe.add_body(100, {540,400}, {0,3});
-    const auto& b3 = universe.add_body(1500, {0,300}, {2,0});
+    universe.add_body(10000, {400,400}, {0,0})
+            .add_body(100, {200,400}, {0,4})
+            .add_body(200, {700,400}, {0,-2});
 
     sf::RenderWindow window(sf::VideoMode(800, 800), "n-body");
 
     sf::Text text;
     sf::Font font;
     if( !font.loadFromFile("/usr/share/fonts/TTF/DejaVuSansCondensed.ttf") )
-        fmt::print("Cannot load font");
+        fmt::print(fmt::emphasis::bold | fg(fmt::color::red), "Cannot load font");
     text.setFont(font);
     text.setCharacterSize(12); // [px]
     text.setFillColor(sf::Color::White);
 
-    sf::CircleShape c(2);
-    c.setOrigin(1, 1);
-    c.setFillColor(sf::Color::White);
+    // Center of mass
+    sf::CircleShape cdm(2);
+    cdm.setOrigin(1, 1);
+    cdm.setFillColor(sf::Color::White);
 
-    sf::CircleShape body1(7);
-    body1.setOrigin(3.5, 3.5);
-    body1.setFillColor(sf::Color::Green);
+    struct body_t final
+       {
+        body_t() noexcept : data(nullptr) {}
+        body_t(const Universe::Body* const p, sf::CircleShape&& o) noexcept : data(p), shape(o) {}
 
-    sf::CircleShape body2(5);
-    body2.setOrigin(2.5, 2.5);
-    body2.setFillColor(sf::Color::Red);
-
-    sf::CircleShape body3(7);
-    body3.setOrigin(3.5, 3.5);
-    body3.setFillColor(sf::Color::Blue);
-
+        const Universe::Body* data;
+        sf::CircleShape shape;
+       };
+    std::vector<body_t> bodies;
+    bodies.reserve( universe.bodies().size() );
+    for( const auto& body : universe.bodies() )
+       {
+        const float min_radius = 4;
+        const float max_radius = 10;
+        const float radius = std::clamp(static_cast<float>(body.mass()/100.0), min_radius, max_radius);
+        auto& new_body = bodies.emplace_back( body_t{&body, sf::CircleShape(radius)} );
+        new_body.shape.setOrigin(radius/2, radius/2);
+        new_body.shape.setFillColor( get_body_color(body.mass()) );
+       }
 
     using clock = std::chrono::high_resolution_clock;
     using sec = std::chrono::duration<double>;
@@ -47,7 +74,7 @@ int main()
     auto before = clock::now();
     const double k_time = 10.0;
 
-    while(window.isOpen())
+    while( window.isOpen() )
        {
         sf::Event event;
         while(window.pollEvent(event))
@@ -59,22 +86,23 @@ int main()
         before = clock::now();
         universe.evolve_verlet( k_time * duration.count() );
 
-      #pragma clang diagnostic push
-      #pragma clang diagnostic ignored "-Wimplicit-float-conversion"
         window.clear();
         text.setString(fmt::format("E={:.1f}  dt={:.1f}ms  t={:.0f}s", universe.total_energy(), 1E3*duration.count(), universe.time()));
+
         const auto C = universe.center_of_mass();
-        c.setPosition(C.x, C.y);
-        body1.setPosition(b1.position().x, b1.position().y);
-        body2.setPosition(b2.position().x, b2.position().y);
-        body3.setPosition(b3.position().x, b3.position().y);
-        window.draw(c);
-        window.draw(body1);
-        window.draw(body2);
-        window.draw(body3);
+        cdm.setPosition(static_cast<float>(C.x),
+                        static_cast<float>(C.y));
+        window.draw(cdm);
+
+        for( auto& body : bodies )
+           {
+            body.shape.setPosition(static_cast<float>(body.data->position().x),
+                                   static_cast<float>(body.data->position().y));
+            window.draw(body.shape);
+           }
+
         window.draw(text);
         window.display();
-      #pragma clang diagnostic pop
        }
 
     return 0;
