@@ -33,5 +33,4 @@ Makefile.Release
 *.user
 
 # [specific]
-*.pll
-*.plclib
+n-body

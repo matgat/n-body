@@ -5,6 +5,7 @@
 #include <fmt/color.h> // fmt::color::*
 #include <SFML/Graphics.hpp>
 
+#include "sfml-addons.hpp" // sfadd::*
 #include "universe.hpp" // Universe
 
 //----------------------------------------------------------------------
@@ -39,16 +40,20 @@ int main()
     sf::View view = window.getDefaultView();
     window.setView(view);
 
-    struct{ sf::Vector2i clicked,center; bool active=false; } pan;
-
+    sfadd::Pan pan;
+    sfadd::Zoom zoom;
 
     sf::Text text;
     sf::Font font;
     if( !font.loadFromFile("/usr/share/fonts/TTF/DejaVuSansCondensed.ttf") )
         fmt::print(fmt::emphasis::bold | fg(fmt::color::red), "Cannot load font");
     text.setFont(font);
-    text.setCharacterSize(12); // [px]
+    text.setCharacterSize(14); // [px]
     text.setFillColor(sf::Color::White);
+
+    sf::Text dbg_text;
+    dbg_text.setFont(font);
+    dbg_text.setFillColor(sf::Color::Yellow);
 
     // Center of mass
     sf::CircleShape cdm(2);
@@ -86,85 +91,60 @@ int main()
         sf::Event event;
         while( window.pollEvent(event) )
            {
-
-            //switch( event.type )
-            //   {
-            //    case sf::Event::KeyPressed:
-            //        break;
-            //    case sf::Event::Closed:
-            //        window.close();
-            //        break;
-            //   }
-
-
-            if( event.type==sf::Event::Resized )
-               {// Update the view to the new size of the window
-                sf::FloatRect visibleArea(0.f, 0.f, static_cast<float>(event.size.width), static_cast<float>(event.size.height));
-                view.reset(visibleArea);
-                window.setView(view);
-               }
-            else if( event.type==sf::Event::MouseButtonPressed )
+            switch( event.type )
                {
-                if( event.mouseButton.button==sf::Mouse::Left )
-                   {
-                    pan.clicked = {event.mouseButton.x, event.mouseButton.y};
-                    pan.center = window.mapCoordsToPixel(view.getCenter());
-                    pan.active = true;
-                   }
-               }
-            else if( event.type==sf::Event::MouseButtonReleased )
-               {
-                pan.active = false;
-               }
-            else if( event.type==sf::Event::MouseMoved && pan.active )
-               {
-                auto do_pan = [&window, &view, &pan](const sf::Vector2i pixel) -> void
-                   {
-                    //const sf::Vector2f p{ window.mapPixelToCoords(pixel) };
-                    //view.setCenter( sf::Vector2f(pixel) );
-                    //view.setCenter(sf::Vector2f(pan.center + pan.clicked - pixel));
-                    view.move(sf::Vector2f(pan.clicked - pixel));
-                    pan.clicked = pixel;
+                case sf::Event::Resized:
+                    view.setSize(zoom.width_of(event.size.width), zoom.height_of(event.size.height));
                     window.setView(view);
-                   };
-                do_pan({event.mouseMove.x, event.mouseMove.y});
-               }
-            else if( event.type==sf::Event::MouseWheelScrolled )
-               {
-                auto zoom_at = [&window, &view](const sf::Vector2i pixel, const float zoom) -> void
-                   {
-                    const sf::Vector2f c_before{ window.mapPixelToCoords(pixel) };
-                    view.zoom(zoom);
-                    window.setView(view);
-                    const sf::Vector2f c_after{ window.mapPixelToCoords(pixel) };
-                    view.move(c_before - c_after);
-                    window.setView(view);
-                   };
-                const float zoomAmount{ 1.1f }; // 10%
-                zoom_at({ event.mouseWheelScroll.x, event.mouseWheelScroll.y }, event.mouseWheelScroll.delta>0 ? (1.f / zoomAmount) : zoomAmount);
-               }
-            else if( event.type==sf::Event::KeyPressed )
-               {
-                if( event.key.code==sf::Keyboard::Escape )
-                   {
+                    break;
+
+                case sf::Event::MouseButtonPressed:
+                    if( event.mouseButton.button==sf::Mouse::Left )
+                       {
+                        pan.init({event.mouseButton.x, event.mouseButton.y});
+                       }
+                    break;
+
+                case sf::Event::MouseButtonReleased:
+                    pan.end();
+                    break;
+
+                case sf::Event::MouseMoved:
+                    if( pan.is_active() )
+                       {
+                        pan(window, view, {event.mouseMove.x, event.mouseMove.y});
+                       }
+                    else
+                       {
+                        const sf::Vector2f p{ window.mapPixelToCoords({event.mouseMove.x, event.mouseMove.y}) };
+                        const sf::Vector2f vc{view.getCenter()};
+                        const sf::Vector2f vsiz{view.getSize()};
+
+                        dbg_text.setString(fmt::format("{};{} = {:.3f};{:.3f}\n"
+                                                       "view {:.3f};{:.3f} {:.3f}x{:.3f}",
+                                           event.mouseMove.x, event.mouseMove.y, p.x, p.y,
+                                           vc.x, vc.y, vsiz.x, vsiz.y));
+                       }
+                    break;
+
+                case sf::Event::MouseWheelScrolled:
+                    zoom(window, view, {event.mouseWheelScroll.x, event.mouseWheelScroll.y}, event.mouseWheelScroll.delta>0);
+                    break;
+
+                case sf::Event::KeyPressed:
+                    if( event.key.code==sf::Keyboard::Escape )
+                       {
+                        window.close();
+                       }
+                    break;
+
+                case sf::Event::Closed:
                     window.close();
-                   }
+                    break;
+
+                default:
+                    break;
                }
-            else if( event.type==sf::Event::Closed )
-               {
-                window.close();
-               }
-
-            // get the current mouse position in the window
-            //sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
-
-            // convert it to world coordinates
-            //sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos);
-            //view.zoom(0.5f);
-            //view.move(100.f, 100.f);
-            //view.setCenter(200.f, 200.f);
-            //    view.zoom(0.5f);
-
            }
 
         const sec duration = clock::now() - before;
@@ -172,7 +152,12 @@ int main()
         universe.evolve_verlet( k_time * duration.count() );
 
         window.clear();
+
         text.setString(fmt::format("E={:.1f}  dt={:.1f}ms  t={:.0f}s", universe.total_energy(), 1E3*duration.count(), universe.time()));
+        text.setPosition( window.mapPixelToCoords({0,0}) );
+
+        //sf::Vector2i mouse_pix = sf::Mouse::getPosition(window);
+        dbg_text.setPosition( window.mapPixelToCoords({0,20}) );
 
         const auto C = universe.center_of_mass();
         cdm.setPosition(static_cast<float>(C.x),
@@ -187,6 +172,7 @@ int main()
            }
 
         window.draw(text);
+        window.draw(dbg_text);
         window.display();
        }
 
