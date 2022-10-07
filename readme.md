@@ -1,11 +1,13 @@
 ## [n-body](https://github.com/matgat/n-body.git)
 
-A fun project to permorm N-body simulations.
+A fun project to perform N-body simulation.
 
 
 _________________________________________________________________________
 ## Build
 ```
+# pacman -S fmt sfml
 $ git clone https://github.com/matgat/n-body.git
+$ cd n-body
 $ clang++ -std=c++2b -O3 -Wall -Wextra -Wpedantic -Wconversion -Wfatal-errors -lfmt -lsfml-graphics -lsfml-window -lsfml-system "n-body.cpp" -o "n-body"
 ```

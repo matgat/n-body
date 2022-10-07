@@ -4,6 +4,7 @@
 //  Some SFML facilities
 //  ---------------------------------------------
 #include <SFML/Graphics.hpp>
+#include <cmath> // std::ceil
 
 
 //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -59,7 +60,7 @@ class Zoom
         window.setView(view);
         // Remember the scaling factors in order to keep them on resize
         const sf::IntRect Rpix = window.getViewport(view);
-        const sf::Vector2f view_size = view.getSize();
+        const sf::Vector2f& view_size = view.getSize();
         kx = Rpix.width!=0 ? view_size.x/static_cast<float>(Rpix.width) : 1.0f;
         ky = Rpix.height!=0 ? view_size.y/static_cast<float>(Rpix.height) : 1.0f;
        }
@@ -69,6 +70,7 @@ class Zoom
 };
 
 
+    
 /////////////////////////////////////////////////////////////////////////////
 class View
 {
@@ -86,11 +88,12 @@ class View
 
     //[[nodiscard]] sf::View& view() noexcept { return i_view; }
 
-    //const sf::FloatRect rect() const noexcept
-    //   {
-    //    i_view.getCenter()
-    //    i_view.getSize()
-    //   }
+    [[nodiscard]] sf::FloatRect rect() const noexcept
+       {
+        const sf::Vector2f& c = i_view.getCenter();
+        const sf::Vector2f& siz = i_view.getSize();
+        return sf::FloatRect(c.x-siz.x/2.0f, c.y-siz.y/2.0f, siz.x, siz.y);
+       }
 
     void resize(const unsigned int x_pix, const unsigned int y_pix) noexcept
        {
@@ -104,6 +107,35 @@ class View
     void pan(const sf::Vector2i& mouse_pix) noexcept { i_pan(i_window,i_view,mouse_pix); }
 
     void zoom(const sf::Vector2i& mouse_pix, const bool out) noexcept { i_zoom(i_window,i_view,mouse_pix,out); }
+
+    void draw_grid(const float dx, const float dy) noexcept
+       {
+        const sf::FloatRect r = rect();
+        const float r_right = r.left + r.width;
+        const float r_bottom = r.top + r.height;
+
+        // Vertical lines
+        if( dx>0.0f )
+           {
+            float x = dx * std::ceil(r.left/dx);
+            while( x < r_right )
+               {
+                //draw_line({x,r.top}, {x,r_bottom});
+                x += dx;
+               }
+           }
+
+        // Horizontal lines
+        if( dy>0.0f )
+           {
+            float y = dy * std::ceil(r.top/dy);
+            while( y < r_bottom )
+               {
+                //draw_line({r.left,y}, {r_right,y});
+                y += dy;
+               }
+           }
+       }
 };
 
 

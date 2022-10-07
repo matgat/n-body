@@ -3,7 +3,7 @@
 //  ---------------------------------------------
 //  Common math facilities
 //  ---------------------------------------------
-#include <cmath>
+#include <cmath> // std::abs
 #include <limits> // std::numeric_limits
 
 
