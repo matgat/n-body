@@ -12,12 +12,10 @@
 //----------------------------------------------------------------------
 void draw(sf::RenderWindow& window, const Universe::Vect& point)
 {
-    sf::CircleShape p(2);
-    p.setOrigin(1, 1);
-    p.setFillColor(sf::Color::White);
-    p.setPosition(static_cast<float>(point.x),
-                  static_cast<float>(point.y));
-    window.draw(p);
+    sfadd::Cross c;
+    c.position.x = static_cast<float>(point.x);
+    c.position.y = static_cast<float>(point.y);
+    window.draw(c);
 }
 
 //----------------------------------------------------------------------
@@ -38,13 +36,9 @@ void draw(sf::RenderWindow& window, const Universe::Body& body)
         return colors[idx];
        };
 
-    const float min_radius = 4;
-    const float max_radius = 10;
-    const float radius = std::clamp(static_cast<float>(body.mass()/100.0), min_radius, max_radius);
-
-    sf::CircleShape shape(radius);
-
-    shape.setOrigin(radius/2, radius/2);
+    sf::CircleShape shape( static_cast<float>(body.radius()) );
+    const float r_half = shape.getRadius()/2.0f;
+    shape.setOrigin(r_half, r_half);
     shape.setFillColor( get_body_color(body.mass()) );
     shape.setPosition( static_cast<float>(body.position().x),
                        static_cast<float>(body.position().y) );
@@ -65,27 +59,52 @@ void draw(sf::RenderWindow& window, const Universe& universe)
 }
 
 //----------------------------------------------------------------------
-int main()
+Universe setup_small_around_big()
 {
-    // Creating a universe with a certain gravitational constant
-    Universe universe(1); // Our universe: 6.67408E-11 m³/kg s²
+    Universe universe(1.0,0); // Our universe: 6.67408E-11 m³/kg s²
     // Adding bodies (mass, initial position and speed)
     universe.add_body(10000, {400,400}, {0,0})
             .add_body(100, {200,400}, {0,4})
             .add_body(200, {700,400}, {0,-2})
             .add_body(100, {400,500}, {10,0})
             .add_body(200, {400,300}, {-5,0});
+    return universe;
+}
+
+//----------------------------------------------------------------------
+Universe setup_coll_test()
+{
+    Universe universe(0.0,0.5);
+    universe.add_body(40000, {300,400}, {2,0})
+            .add_body(20000, {500,396}, {-2,0});
+    return universe;
+}
+
+
+//----------------------------------------------------------------------
+int main()
+{
+    // Creating a universe with a certain gravitational constant
+    Universe universe = setup_small_around_big();
+    //Universe universe = setup_coll_test();
 
     sf::RenderWindow window(sf::VideoMode(800, 800), "n-body");
     sfadd::View view{ window };
 
     sf::Text text;
     sf::Font font;
+
+  #if defined(_WIN32) || defined(_WIN64)
+    if( !font.loadFromFile("c:/windows/fonts/DejaVuSansCondensed.ttf") )
+  #elif defined(__unix__) || defined(__linux__)
     if( !font.loadFromFile("/usr/share/fonts/TTF/DejaVuSansCondensed.ttf") )
+  #endif
+       {
         fmt::print(fmt::emphasis::bold | fg(fmt::color::red), "Cannot load font");
+       }
     text.setFont(font);
-    text.setCharacterSize(14); // [px]
     text.setFillColor(sf::Color::White);
+    text.setCharacterSize(14);
 
     //sf::Text dbg_text;
     //dbg_text.setFont(font);
@@ -157,11 +176,14 @@ int main()
         const sec duration = clock::now() - before;
         before = clock::now();
         universe.evolve_verlet( k_time * duration.count() );
+        universe.handle_collisions();
 
         window.clear();
+        view.draw_grid(100,100,sf::Color{50,50,50});
 
         text.setString(fmt::format("E={:.1f}  dt={:.1f}ms  t={:.0f}s", universe.total_energy(), 1E3*duration.count(), universe.time()));
         text.setPosition( window.mapPixelToCoords({0,0}) );
+        //text.setCharacterSize(14);
 
         //sf::Vector2i mouse_pix = sf::Mouse::getPosition(window);
         //dbg_text.setPosition( window.mapPixelToCoords({0,20}) );

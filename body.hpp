@@ -4,6 +4,7 @@
 //  Gravitational body descriptor
 //  ---------------------------------------------
 #include <stdexcept>
+#include <cmath> // std::log10
 #include "math-utilities.hpp" // math::*
 
 
@@ -13,6 +14,7 @@ template<class Vect> class Body_t final
  public:
     Body_t(const double m, const Vect& pos, const Vect& spd)
       : i_mass(m)
+      , i_radius(std::log10(1.0 + i_mass))
       , i_pos(pos)
       , i_spd(spd)
        {
@@ -23,14 +25,22 @@ template<class Vect> class Body_t final
        }
 
     [[nodiscard]] double mass() const noexcept { return i_mass; }
+    [[nodiscard]] double radius() const noexcept { return i_radius; }
     [[nodiscard]] const Vect& position() const noexcept { return i_pos; }
     [[nodiscard]] const Vect& speed() const noexcept { return i_spd; }
     [[nodiscard]] const Vect& acceleration() const noexcept { return i_acc; }
 
-    Vect distance_from(const Body_t& other) const noexcept
+    void set_speed(const Vect new_spd) noexcept { i_spd = new_spd; }
+
+    [[nodiscard]] Vect displacement_from(const Body_t& other) const noexcept
        {
         return position() - other.position();
        }
+
+    //[[nodiscard]] bool collides_with(const Body_t& other) const noexcept
+    //   {
+    //    return displacement_from(other).norm() < (radius() + other.radius());
+    //   }
 
     [[nodiscard]] double kinetic_energy() const noexcept
        {// ½ m·V²
@@ -39,20 +49,20 @@ template<class Vect> class Body_t final
 
     [[nodiscard]] Vect gravitational_force_on(const Body_t& other, const double G) const noexcept
        {// G · M·m / d²
-        const Vect disp = distance_from(other);
+        const Vect disp = displacement_from(other);
         const double d = disp.norm();
         return math::ratio(G * mass() * other.mass(), d*d*d) * disp;
        }
 
     [[nodiscard]] double gravitational_energy_with(const Body_t& other, const double G) const noexcept
        {// U = -G · mi·mj / d
-        const double d = distance_from(other).norm();
+        const double d = displacement_from(other).norm();
         return math::ratio(-G * mass() * other.mass(), d);
        }
 
     void apply_force(const Vect& f)
        {// Newton's law: F=ma
-        i_acc = (1.0/i_mass) * f;
+        i_acc = f/i_mass;
        }
 
     void evolve_speed(const double dt) noexcept
@@ -67,6 +77,7 @@ template<class Vect> class Body_t final
 
  private:
     double i_mass;
+    double i_radius; // [<space>]
     Vect i_pos, // Position [<space>]
          i_spd, // Speed [<space>/<time>]
          i_acc; // Acceleration [<space>/<time>²]

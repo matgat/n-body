@@ -70,7 +70,7 @@ class Zoom
 };
 
 
-    
+
 /////////////////////////////////////////////////////////////////////////////
 class View
 {
@@ -108,11 +108,15 @@ class View
 
     void zoom(const sf::Vector2i& mouse_pix, const bool out) noexcept { i_zoom(i_window,i_view,mouse_pix,out); }
 
-    void draw_grid(const float dx, const float dy) noexcept
+    void draw_grid(const float dx, const float dy, sf::Color color) noexcept
        {
         const sf::FloatRect r = rect();
         const float r_right = r.left + r.width;
         const float r_bottom = r.top + r.height;
+
+        sf::Vertex vertices[2];
+        vertices[0].color = color;
+        vertices[1].color = color;
 
         // Vertical lines
         if( dx>0.0f )
@@ -120,7 +124,9 @@ class View
             float x = dx * std::ceil(r.left/dx);
             while( x < r_right )
                {
-                //draw_line({x,r.top}, {x,r_bottom});
+                vertices[0].position = {x,r.top};
+                vertices[1].position = {x,r_bottom};
+                i_window.draw(vertices, 2, sf::Lines);
                 x += dx;
                }
            }
@@ -131,12 +137,39 @@ class View
             float y = dy * std::ceil(r.top/dy);
             while( y < r_bottom )
                {
-                //draw_line({r.left,y}, {r_right,y});
+                vertices[0].position = {r.left,y};
+                vertices[1].position = {r_right,y};
+                i_window.draw(vertices, 2, sf::Lines);
                 y += dy;
                }
            }
        }
 };
+
+
+/////////////////////////////////////////////////////////////////////////////
+class Cross : public sf::Drawable
+{
+ public:
+    sf::Color color{0,200,200};
+    sf::Vector2f position{};
+    float dim{10.0f};
+
+ private:
+    virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const
+       {
+        sf::Vertex vertices[2];
+        vertices[0].color = color;
+        vertices[1].color = color;
+        vertices[0].position = {position.x+dim,position.y};
+        vertices[1].position = {position.x-dim,position.y};
+        target.draw(vertices, 2, sf::Lines, states);
+        vertices[0].position = {position.x,position.y+dim};
+        vertices[1].position = {position.x,position.y-dim};
+        target.draw(vertices, 2, sf::Lines, states);
+       }
+};
+
 
 
 }//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
