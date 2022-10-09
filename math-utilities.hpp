@@ -25,7 +25,8 @@ namespace math //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 }
 
 //----------------------------------------------------------------------
-//constexpr inline double square(const double x) noexcept { return x*x; }
+constexpr inline double square(const double x) noexcept { return x*x; }
+constexpr inline double cube(const double x) noexcept { return x*x*x; }
 
 }//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

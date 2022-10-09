@@ -61,22 +61,22 @@ void draw(sf::RenderWindow& window, const Universe& universe)
 //----------------------------------------------------------------------
 Universe setup_small_around_big()
 {
-    Universe universe(1.0,0); // Our universe: 6.67408E-11 m³/kg s²
+    Universe universe(1.0); // Our universe: 6.67408E-11 m³/kg s²
     // Adding bodies (mass, initial position and speed)
-    universe.add_body(10000, {400,400}, {0,0})
-            .add_body(100, {200,400}, {0,4})
-            .add_body(200, {700,400}, {0,-2})
-            .add_body(100, {400,500}, {10,0})
-            .add_body(200, {400,300}, {-5,0});
+    universe.add_body(5000, {400,400}, {0,0})
+            .add_body(200, {200,400}, {0,4})
+            .add_body(300, {700,400}, {0,-2})
+            .add_body(200, {400,500}, {10,0})
+            .add_body(500, {400,300}, {-5,0});
     return universe;
 }
 
 //----------------------------------------------------------------------
 Universe setup_coll_test()
 {
-    Universe universe(0.0,0.5);
-    universe.add_body(40000, {300,400}, {2,0})
-            .add_body(20000, {500,396}, {-2,0});
+    Universe universe(0.0);
+    universe.add_body(40000, {300,400}, {2,1})
+            .add_body(20000, {500,396}, {-2,1});
     return universe;
 }
 
@@ -129,6 +129,11 @@ int main()
 
                 case sf::Event::MouseButtonPressed:
                     if( event.mouseButton.button==sf::Mouse::Left )
+                       {
+                        const sf::Vector2f p = window.mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
+                        universe.add_body(200, {p.x, p.y}, {8,0});
+                       }
+                    else if( event.mouseButton.button==sf::Mouse::Middle )
                        {
                         view.pan_init({event.mouseButton.x, event.mouseButton.y});
                        }
