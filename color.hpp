@@ -1,7 +1,7 @@
-#ifndef GUARD_sfml_addons_color_hpp
-#define GUARD_sfml_addons_color_hpp
+#ifndef GUARD_color_hpp
+#define GUARD_color_hpp
 //  ---------------------------------------------
-//  An enhanced color class for SFML
+//  A color class
 //  ---------------------------------------------
 #include <cassert>
 #include <cstdint> // std::uint32_t, std::uint8_t
@@ -9,6 +9,7 @@
 #include <cmath> // std::fmod
 #include <algorithm> // std::minmax
 #include <fmt/core.h> // fmt::format
+#include <fmt/color.h> // fmt::color::*
 
 
 
@@ -18,20 +19,51 @@ class Color
  private:
     std::uint8_t r,g,b,a; // Components
 
-    struct hsl_t {float h, s, l;};
-    struct rgb_t {std::uint8_t r, g, b;};
+    struct hsl_t
+       {
+        float h, s, l;
+        [[nodiscard]] static constexpr bool is_zero(const float v) noexcept { return v>(-0.01f) && v<0.01f; }
+        [[nodiscard]] constexpr friend bool operator==(const hsl_t& l, const hsl_t& r) noexcept { return is_zero(l.h-r.h) && is_zero(l.s-r.s) && is_zero(l.l-r.l); }
+        [[nodiscard]] constexpr bool is_equal_to(const std::initializer_list<float>& r) const noexcept { return r.size()==3 && is_zero(h-*(r.begin())) && is_zero(s-*(r.begin()+1)) && is_zero(l-*(r.begin()+2)); }
+        [[nodiscard]] static constexpr float clamp(const float val) noexcept
+           {
+            if(val>=1.0f) return 1.0f;
+            else if(val<=0.0f) return 0.0f;
+            return val;
+           }
+        [[nodiscard]] std::string string() const { return fmt::format("({:.2f},{:.2f},{:.2f})",h,s,l); }
+       };
+
+    struct rgb_t
+       {
+        std::uint8_t r, g, b;
+
+        static constexpr std::uint8_t max = std::numeric_limits<uint8_t>::max();
+
+        [[nodiscard]] static constexpr std::uint8_t incr(const std::uint8_t v,const std::uint8_t d) noexcept
+           {
+            return d<(rgb_t::max-v) ? v+d : rgb_t::max;
+           }
+        [[nodiscard]] static constexpr std::uint8_t decr(const std::uint8_t v,const std::uint8_t d) noexcept
+           {
+            return d<v ? v-d : std::numeric_limits<uint8_t>::min();
+           }
+           
+        [[nodiscard]] constexpr friend bool operator==(const rgb_t& l, const rgb_t& r) noexcept { return l.r==r.r && l.g==r.g && l.b==r.b; }
+        [[nodiscard]] constexpr bool is_equal_to(const std::initializer_list<std::uint8_t>& lst) const noexcept { return lst.size()==3 && r==*(lst.begin()) && g==*(lst.begin()+1) && b==*(lst.begin()+2); }
+       };
 
  public:
     constexpr Color() noexcept
       : r(0)
       , g(0)
       , b(0)
-      , a(channel_max) {}
+      , a(rgb_t::max) {}
 
     constexpr Color(const std::uint8_t red,
                     const std::uint8_t green,
                     const std::uint8_t blue,
-                    const std::uint8_t alpha =channel_max) noexcept
+                    const std::uint8_t alpha =rgb_t::max) noexcept
       : r(red)
       , g(green)
       , b(blue)
@@ -43,14 +75,14 @@ class Color
       , b(static_cast<std::uint8_t>((rgba & 0x0000ff00) >> 8))
       , a(static_cast<std::uint8_t>(rgba & 0x000000ff)) {}
 
-    constexpr Color(const float h,
-                    const float s,
-                    const float l,
-                    const float opacity =1.0f) noexcept
-      : a(static_cast<std::uint8_t>(opacity * static_cast<float>(channel_max)))
-       {
-        hsl2rgb({h,s,l}, r,g,b);
-       }
+    //constexpr Color(const float h,
+    //                const float s,
+    //                const float l,
+    //                const float opacity =1.0f) noexcept
+    //  : a(static_cast<std::uint8_t>(opacity * static_cast<float>(rgb_t::max)))
+    //   {
+    //    hsl2rgb({h,s,l}, r,g,b);
+    //   }
 
     //------------------------------------------------------------------------
     [[nodiscard]] constexpr std::uint32_t rgba_value() const noexcept
@@ -66,6 +98,58 @@ class Color
     [[nodiscard]] friend constexpr bool operator!=(const Color& left, const Color& right) noexcept
        {
         return !(left == right);
+       }
+    [[nodiscard]] constexpr bool has_same_rgb_of(const Color& other) noexcept
+       {
+        return (r == other.r) && (g == other.g) && (b == other.b);
+       }
+
+
+    //-----------------------------------------------------------------------
+    [[maybe_unused]] constexpr Color& operator+=(const Color other) noexcept
+       {
+        r = rgb_t::incr(r, other.r);
+        g = rgb_t::incr(g, other.g);
+        b = rgb_t::incr(b, other.b);
+        a = rgb_t::incr(a, other.a);
+        return *this;
+       }
+    [[nodiscard]] friend constexpr Color operator+(Color left, const Color right) noexcept
+       {
+        return left += right;
+       }
+
+    //-----------------------------------------------------------------------
+    [[maybe_unused]] constexpr Color& operator-=(const Color other) noexcept
+       {
+        r = rgb_t::decr(r, other.r);
+        g = rgb_t::decr(g, other.g);
+        b = rgb_t::decr(b, other.b);
+        a = rgb_t::decr(a, other.a);
+        return *this;
+       }
+    [[nodiscard]] friend constexpr Color operator-(Color left, const Color right) noexcept
+       {
+        return left -= right;
+       }
+
+    //-----------------------------------------------------------------------
+    [[maybe_unused]] constexpr Color& operator*=(const Color other) noexcept
+       {
+        const auto channel_mul = [](const std::uint8_t lhs, const std::uint8_t rhs) -> std::uint8_t
+           {
+            const std::uint16_t prod = static_cast<std::uint16_t>(lhs) * static_cast<std::uint16_t>(rhs);
+            return static_cast<std::uint8_t>(prod / rgb_t::max);
+           };
+        r = channel_mul(r, other.r),
+        g = channel_mul(g, other.g),
+        b = channel_mul(b, other.b),
+        a = channel_mul(a, other.a);
+        return *this;
+       }
+    [[nodiscard]] friend constexpr Color operator*(Color left, const Color right) noexcept
+       {
+        return left *= right;
        }
 
     //-----------------------------------------------------------------------
@@ -85,58 +169,11 @@ class Color
     //   }
 
     //-----------------------------------------------------------------------
-    [[maybe_unused]] constexpr Color& operator+=(const Color other) noexcept
-       {
-        r = channel_incr(r, other.r);
-        g = channel_incr(g, other.g);
-        b = channel_incr(b, other.b);
-        a = channel_incr(a, other.a);
-        return *this;
-       }
-    [[nodiscard]] friend constexpr Color operator+(Color left, const Color right) noexcept
-       {
-        return left += right;
-       }
-
-    //-----------------------------------------------------------------------
-    [[maybe_unused]] constexpr Color& operator-=(const Color other) noexcept
-       {
-        r = channel_decr(r, other.r);
-        g = channel_decr(g, other.g);
-        b = channel_decr(b, other.b);
-        a = channel_decr(a, other.a);
-        return *this;
-       }
-    [[nodiscard]] friend constexpr Color operator-(Color left, const Color right) noexcept
-       {
-        return left -= right;
-       }
-
-    //-----------------------------------------------------------------------
-    [[maybe_unused]] constexpr Color& operator*=(const Color other) noexcept
-       {
-        const auto channel_mul = [](const std::uint8_t lhs, const std::uint8_t rhs) -> std::uint8_t
-           {
-            const std::uint16_t prod = static_cast<std::uint16_t>(lhs) * static_cast<std::uint16_t>(rhs);
-            return static_cast<std::uint8_t>(prod / channel_max);
-           };
-        r = channel_mul(r, other.r),
-        g = channel_mul(g, other.g),
-        b = channel_mul(b, other.b),
-        a = channel_mul(a, other.a);
-        return *this;
-       }
-    [[nodiscard]] friend constexpr Color operator*(Color left, const Color right) noexcept
-       {
-        return left *= right;
-       }
-
-    //-----------------------------------------------------------------------
     [[maybe_unused]] constexpr Color& invert() noexcept
        {
-        r = channel_max - r;
-        g = channel_max - g;
-        b = channel_max - b;
+        r = rgb_t::max - r;
+        g = rgb_t::max - g;
+        b = rgb_t::max - b;
         return *this;
        }
 
@@ -144,78 +181,78 @@ class Color
     //-----------------------------------------------------------------------
     [[maybe_unused]] constexpr Color& redder(const std::uint8_t d) noexcept
        {
-        std::uint8_t r_incr = channel_incr(r, d/2);
+        std::uint8_t r_incr = rgb_t::incr(r, d/2);
         const std::uint8_t decr = d - (r_incr - r); // Ensure a difference d
-        const std::uint8_t g_decr = channel_decr(g, decr);
-        const std::uint8_t b_decr = channel_decr(b, decr);
+        const std::uint8_t g_decr = rgb_t::decr(g, decr);
+        const std::uint8_t b_decr = rgb_t::decr(b, decr);
         // Ensure the difference:
-             if(g_decr==0) r_incr = channel_incr(r, d - g);
-        else if(b_decr==0) r_incr = channel_incr(r, d - b);
+             if(g_decr==0) r_incr = rgb_t::incr(r, d - g);
+        else if(b_decr==0) r_incr = rgb_t::incr(r, d - b);
         return set_rgb(r_incr, g_decr, b_decr);
        }
 
     //-----------------------------------------------------------------------
     [[maybe_unused]] constexpr Color& greener(const std::uint8_t d) noexcept
        {
-        std::uint8_t g_incr = channel_incr(g, d/2);
+        std::uint8_t g_incr = rgb_t::incr(g, d/2);
         const std::uint8_t decr = d - (g_incr - g); // Ensure a difference d
-        const std::uint8_t r_decr = channel_decr(r, decr);
-        const std::uint8_t b_decr = channel_decr(b, decr);
+        const std::uint8_t r_decr = rgb_t::decr(r, decr);
+        const std::uint8_t b_decr = rgb_t::decr(b, decr);
         // Ensure the difference:
-             if(r_decr==0) g_incr = channel_incr(g, d - r);
-        else if(b_decr==0) g_incr = channel_incr(g, d - b);
+             if(r_decr==0) g_incr = rgb_t::incr(g, d - r);
+        else if(b_decr==0) g_incr = rgb_t::incr(g, d - b);
         return set_rgb(r_decr, g_incr, b_decr);
        }
 
     //-----------------------------------------------------------------------
     [[maybe_unused]] constexpr Color& bluer(const std::uint8_t d) noexcept
        {
-        std::uint8_t b_incr = channel_incr(b, d/2);
+        std::uint8_t b_incr = rgb_t::incr(b, d/2);
         const std::uint8_t decr = d - (b_incr - b); // Ensure a difference d
-        const std::uint8_t r_decr = channel_decr(r, decr);
-        const std::uint8_t g_decr = channel_decr(g, decr);
+        const std::uint8_t r_decr = rgb_t::decr(r, decr);
+        const std::uint8_t g_decr = rgb_t::decr(g, decr);
         // Ensure the difference:
-             if(r_decr==0) b_incr = channel_incr(b, d - r);
-        else if(g_decr==0) b_incr = channel_incr(b, d - g);
+             if(r_decr==0) b_incr = rgb_t::incr(b, d - r);
+        else if(g_decr==0) b_incr = rgb_t::incr(b, d - g);
         return set_rgb(r_decr, g_decr, b_incr);
        }
 
     //-----------------------------------------------------------------------
     [[maybe_unused]] constexpr Color& yellower(const std::uint8_t d) noexcept
        {
-        std::uint8_t b_decr = channel_decr(b, d/2);
+        std::uint8_t b_decr = rgb_t::decr(b, d/2);
         const std::uint8_t incr = d - (b - b_decr); // Ensure a difference d
-        const std::uint8_t r_incr = channel_incr(r, incr);
-        const std::uint8_t g_incr = channel_incr(g, incr);
+        const std::uint8_t r_incr = rgb_t::incr(r, incr);
+        const std::uint8_t g_incr = rgb_t::incr(g, incr);
         // Ensure the difference:
-             if(r_incr==channel_max) b_decr = channel_decr(b, d - (r_incr - r));
-        else if(g_incr==channel_max) b_decr = channel_decr(b, d - (g_incr - g));
+             if(r_incr==rgb_t::max) b_decr = rgb_t::decr(b, d - (r_incr - r));
+        else if(g_incr==rgb_t::max) b_decr = rgb_t::decr(b, d - (g_incr - g));
         return set_rgb(r_incr, g_incr, b_decr);
        }
 
     //-----------------------------------------------------------------------
     [[maybe_unused]] constexpr Color& purpler(const std::uint8_t d) noexcept
        {
-        std::uint8_t g_decr = channel_decr(g, d/2);
+        std::uint8_t g_decr = rgb_t::decr(g, d/2);
         const std::uint8_t incr = d - (g - g_decr); // Ensure a difference d
-        const std::uint8_t r_incr = channel_incr(r, incr);
-        const std::uint8_t b_incr = channel_incr(b, incr);
+        const std::uint8_t r_incr = rgb_t::incr(r, incr);
+        const std::uint8_t b_incr = rgb_t::incr(b, incr);
         // Ensure the difference:
-             if(r_incr==channel_max) g_decr = channel_decr(g, d - (r_incr - r));
-        else if(b_incr==channel_max) g_decr = channel_decr(g, d - (b_incr - b));
+             if(r_incr==rgb_t::max) g_decr = rgb_t::decr(g, d - (r_incr - r));
+        else if(b_incr==rgb_t::max) g_decr = rgb_t::decr(g, d - (b_incr - b));
         return set_rgb(r_incr, g_decr, b_incr);
        }
 
     //-----------------------------------------------------------------------
     [[maybe_unused]] constexpr Color& cyaner(const std::uint8_t d) noexcept
        {
-        std::uint8_t r_decr = channel_decr(r, d/2);
+        std::uint8_t r_decr = rgb_t::decr(r, d/2);
         const std::uint8_t incr = d - (r - r_decr); // Ensure a difference d
-        const std::uint8_t g_incr = channel_incr(g, incr);
-        const std::uint8_t b_incr = channel_incr(b, incr);
+        const std::uint8_t g_incr = rgb_t::incr(g, incr);
+        const std::uint8_t b_incr = rgb_t::incr(b, incr);
         // Ensure the difference:
-             if(g_incr==channel_max) r_decr = channel_decr(r, d - (g_incr - g));
-        else if(b_incr==channel_max) r_decr = channel_decr(r, d - (b_incr - b));
+             if(g_incr==rgb_t::max) r_decr = rgb_t::decr(r, d - (g_incr - g));
+        else if(b_incr==rgb_t::max) r_decr = rgb_t::decr(r, d - (b_incr - b));
         return set_rgb(r_decr, g_incr, b_incr);
        }
 
@@ -244,7 +281,7 @@ class Color
     [[maybe_unused]] constexpr Color& sat_incr(const float d) noexcept
        {
         const auto [h,s,l] = get_hsl();
-        return set_hsl({h, clamp_01(s+d), l});
+        return set_hsl({h, hsl_t::clamp(s+d), l});
        }
     [[maybe_unused]] constexpr Color& grayer(const float d) noexcept { return sat_incr(-d); }
 
@@ -254,7 +291,7 @@ class Color
     [[maybe_unused]] constexpr Color& lum_incr(const float d) noexcept
        {
         const auto [h,s,l] = get_hsl();
-        return set_hsl({h, s, clamp_01(l+d)});
+        return set_hsl({h, s, hsl_t::clamp(l+d)});
        }
 
     [[nodiscard]] constexpr bool is_dark() const noexcept { return lum()<0.25; }
@@ -280,7 +317,7 @@ class Color
             if( l>max_lum ) l = max_lum;
            }
 
-        return set_hsl({h, s, clamp_01(l)});
+        return set_hsl({h, s, hsl_t::clamp(l)});
        }
 
     //-----------------------------------------------------------------------
@@ -303,21 +340,8 @@ class Color
         // Retrieve minimum and maximum intensity of channels
         const auto [rgbmin, rgbmax] = std::minmax({in.r, in.g, in.b});
 
-                                std::uint8_t rmin, rmax;
-                                if( in.r < in.g )
-                                   {
-                                    if( in.g < in.b ) { rmin = in.r;  rmax = in.b; }
-                                    else              { rmax = in.g;  rmin = in.r<in.b ? in.r : in.b; }
-                                   }
-                                else
-                                   {
-                                    if( in.r < in.b ) { rmin = in.g;  rmax = in.b; }
-                                    else              { rmax = in.r;  rmin = in.g<in.b ? in.g : in.b; }
-                                   }
-                                if(rmin!=rgbmin || rmax!=rgbmax) fmt::print("minmax error: {}/{} not {}/{}\n",rgbmin,rgbmax,rmin,rmax);
-
         // [luminance]
-        const float maxsum = 2.0f * static_cast<float>(channel_max);
+        const float maxsum = 2.0f * static_cast<float>(rgb_t::max);
         const float rgbsum = static_cast<float>(rgbmax) + static_cast<float>(rgbmin);
         out.l = rgbsum / maxsum; // Luminance
 
@@ -329,7 +353,7 @@ class Color
            {
             // [saturation]
             const float rgbdiff = static_cast<float>(rgbmax) - static_cast<float>(rgbmin); // chroma
-            out.s = rgbdiff / (out.l<=0.5f ? rgbsum : maxsum-rgbsum); // Equiv to rgbsum<=channel_max
+            out.s = rgbdiff / (out.l<=0.5f ? rgbsum : maxsum-rgbsum); // Equiv to rgbsum<=rgb_t::max
 
             // [hue]
                  if(in.r == rgbmax)     out.h = std::fmod( 60.0f * (6.0f + (static_cast<float>(in.g)-static_cast<float>(in.b))/rgbdiff), 360.0f );
@@ -345,73 +369,89 @@ class Color
     static constexpr void hsl2rgb(const hsl_t in, std::uint8_t& r, std::uint8_t& g, std::uint8_t& b) noexcept
        {
         assert(in.s>=0.0f && in.s<=1.0f && in.l>=0.0f && in.l<=1.0f);
-        const auto hue2rgb = [](float h, const float k, float ch) noexcept -> std::uint8_t
+        const auto hue2rgb = [](float h, const float k, float ch) noexcept -> float
            {
-            //while(h > 360.0f) h -= 360.0f; while(h < 0.0f) h += 360.0f;
             h = std::fmod(h, 360.0f);
             if     (h <  60.0f) ch += (k - ch) * h / 60.0f;
             else if(h < 180.0f) ch = k;
             else if(h < 240.0f) ch += (k - ch) * (240.0f - h) / 60.0f;
-            return static_cast<std::uint8_t>(ch);
+            return ch;
            };
-
-        if( std::abs(in.s)<std::numeric_limits<float>::epsilon() )
+        const float chn_max = static_cast<float>(rgb_t::max);
+        if( hsl_t::is_zero(in.s) )
            {// Grayscale
-            r = g = b = channel_max * static_cast<std::uint8_t>(in.l);
+            r = g = b = static_cast<std::uint8_t>(chn_max * in.l);
            }
         else
            {
             const float k = (in.l <= 0.5f) ? in.l * (1.0f+in.s) : in.l+in.s - in.l*in.s;
-            const float ch = 2.0f*in.l - k;
-            r = channel_max * hue2rgb(in.h + 120.0f, k, ch);
-            g = channel_max * hue2rgb(in.h         , k, ch);
-            b = channel_max * hue2rgb(in.h - 120.0f, k, ch);
+            const float ch0 = 2.0f*in.l - k;
+            r = static_cast<std::uint8_t>(chn_max * hue2rgb(in.h + 120.0f, k, ch0));
+            g = static_cast<std::uint8_t>(chn_max * hue2rgb(in.h         , k, ch0));
+            b = static_cast<std::uint8_t>(chn_max * hue2rgb(in.h - 120.0f, k, ch0));
            }
        }
 
 
     // String representation
-    [[nodiscard]] constexpr std::string rgba_string() const { return fmt::format("({},{},{},{})",r,g,b,a); }
-    [[nodiscard]] constexpr std::string hex_string() const { return fmt::format("{:#08x}", rgba_value()); }
+    [[nodiscard]] /*constexpr*/ std::string rgba_string() const { return fmt::format("({},{},{},{})",r,g,b,a); }
+    [[nodiscard]] /*constexpr*/ std::string hex_string() const { return fmt::format("{:#08x}", rgba_value()); }
 
 
- private:
-    static constexpr std::uint8_t channel_max = std::numeric_limits<uint8_t>::max();
-
-    static constexpr std::uint8_t channel_incr(const std::uint8_t v,const std::uint8_t d) noexcept
-       {
-        return d<(channel_max-v) ? v+d : channel_max;
-       }
-
-    static constexpr std::uint8_t channel_decr(const std::uint8_t v,const std::uint8_t d) noexcept
-       {
-        return d<v ? v-d : std::numeric_limits<uint8_t>::min();
-       }
-
-    [[nodiscard]] static constexpr float clamp_01(const float val) noexcept
-       {
-        if(val>=1.0f) return 1.0f;
-        else if(val<=0.0f) return 0.0f;
-        return val;
-       }
+    // Predefined colors
+    //static constexpr Color black(0, 0, 0);
+    //static constexpr Color white(255, 255, 255);
+    //static constexpr Color red(255, 0, 0);
+    //static constexpr Color green(0, 255, 0);
+    //static constexpr Color blue(0, 0, 255);
+    //static constexpr Color yellow(255, 255, 0);
+    //static constexpr Color magenta(255, 0, 255);
+    //static constexpr Color cyan(0, 255, 255);
+    //static constexpr Color transparent(0, 0, 0, 0);
 };
 
 
 
 
-// Note: the 'inline' keyword here is technically not required, but VS2019 fails
-// to compile with a bogus "multiple definition" error if not explicitly used.
-//inline constexpr Color Color::Black(0, 0, 0);
-//inline constexpr Color Color::White(255, 255, 255);
-//inline constexpr Color Color::Red(255, 0, 0);
-//inline constexpr Color Color::Green(0, 255, 0);
-//inline constexpr Color Color::Blue(0, 0, 255);
-//inline constexpr Color Color::Yellow(255, 255, 0);
-//inline constexpr Color Color::Magenta(255, 0, 255);
-//inline constexpr Color Color::Cyan(0, 255, 255);
-//inline constexpr Color Color::Transparent(0, 0, 0, 0);
+
+
+/////////////////////////////////////////////////////////////////////////////
+#ifdef TEST /////////////////////////////////////////////////////////////////
+int main()
+{
+    int errors = 0;
+
+    Color c(254,58,58); // Reddish
+
+    fmt::print("hsl components... ");
+    if( const auto hsl = c.get_hsl(); hsl.is_equal_to({0.00f,0.99f,0.61f}) )
+       {
+        fmt::print(fg(fmt::color::green), "ok hsl={}\n",hsl.string());
+       }
+    else
+       {
+        fmt::print(fmt::emphasis::bold | fg(fmt::color::red), "Wrong hsl={}\n",hsl.string());
+        ++errors;
+       }
+
+    fmt::print("hue setting... ");
+    if( const auto hsl = c.set_hue(31.5f).get_hsl();
+        hsl.is_equal_to({31.5f,0.99f,0.61f}) && c.has_same_rgb_of({254,163,58}) )
+       {
+        fmt::print(fg(fmt::color::green), "ok hsl={}, rgba={}\n",hsl.string(),c.rgba_string());
+       }
+    else
+       {
+        fmt::print(fmt::emphasis::bold | fg(fmt::color::red), "Wrong hsl={}, rgba={}\n",hsl.string(),c.rgba_string());
+        ++errors;
+       }
+
+    return errors;
+}
+#endif //////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 
 
 
-//---- end unit --------------------------------------------------------------
+//---- end unit -------------------------------------------------------------
 #endif
