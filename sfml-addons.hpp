@@ -16,7 +16,7 @@ class Pan
 {
  private:
     sf::Vector2i prev_mouse_pix;
-    bool active=false;
+    bool active = false;
 
  public:
     void init(const sf::Vector2i& mouse_pix) noexcept
@@ -65,8 +65,8 @@ class Zoom
         ky = Rpix.height!=0 ? view_size.y/static_cast<float>(Rpix.height) : 1.0f;
        }
 
-    [[nodiscard]] float width_of(const unsigned int pix) noexcept { return kx * static_cast<float>(pix); }
-    [[nodiscard]] float height_of(const unsigned int pix) noexcept { return ky * static_cast<float>(pix); }
+    [[nodiscard]] float width_of(const unsigned int pix) const noexcept { return kx * static_cast<float>(pix); }
+    [[nodiscard]] float height_of(const unsigned int pix) const noexcept { return ky * static_cast<float>(pix); }
 };
 
 
