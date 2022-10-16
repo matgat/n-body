@@ -6,6 +6,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "sfml-addons.hpp" // sfadd::*
+#include "sfml-addons-color.hpp" // sfadd::Color
 #include "universe.hpp" // Universe
 
 
@@ -21,19 +22,11 @@ void draw(sf::RenderWindow& window, const Universe::Vect& point)
 //----------------------------------------------------------------------
 void draw(sf::RenderWindow& window, const Universe::Body& body)
 {
-    auto get_body_color = [](const double mass) -> sf::Color
+    auto get_body_color = [](const double mass) noexcept -> sf::Color
        {
-        const auto colors = std::array
-           {
-            sf::Color::Blue,
-            sf::Color::Green,
-            sf::Color::Red,
-            sf::Color::Yellow
-           };
-        const std::size_t idx = std::clamp(static_cast<std::size_t>(mass/200.0),
-                                           static_cast<std::size_t>(0u),
-                                           static_cast<std::size_t>(colors.size()-1));
-        return colors[idx];
+        sfadd::Color col{78,72,8};
+        col.lum_incr( static_cast<float>(mass)/10000.0f );
+        return col;
        };
 
     sf::CircleShape shape( static_cast<float>(body.radius()) );
@@ -131,7 +124,8 @@ int main()
                     if( event.mouseButton.button==sf::Mouse::Left )
                        {
                         const sf::Vector2f p = window.mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
-                        universe.add_body(200, {p.x, p.y}, {8,0});
+                        universe.add_body(200, {p.x+20, p.y}, {8.0f,0});
+                        universe.add_body(200, {p.x-20, p.y}, {-8.0f,0});
                        }
                     else if( event.mouseButton.button==sf::Mouse::Middle )
                        {

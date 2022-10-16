@@ -127,6 +127,7 @@ template<class Vect> class SphericalBody final
         const double combined_mass = mass() + other.mass();
         i_spd = ((mass() * speed()) + (other.mass() * other.speed())) / combined_mass;
         i_mass = combined_mass;
+        i_radius = calc_radius_from_mass(i_mass);
        }
 
  private:

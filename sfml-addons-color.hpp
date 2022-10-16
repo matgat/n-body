@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cstdint> // std::uint32_t, std::uint8_t
 #include <limits> // std::numeric_limits
-#include <cmath> // std::fmod
+#include <cmath> // std::fmod, std::lround
 #include <algorithm> // std::minmax
 #include <fmt/core.h> // fmt::format
 #include <fmt/color.h> // fmt::color::*
@@ -58,6 +58,7 @@ class Color : public sf::Color
 
  public:
     using sf::Color::Color; // Inherit all constructors
+
     //-----------------------------------------------------------------------
     [[maybe_unused]] constexpr Color& set_rgb(const std::uint8_t red,
                                               const std::uint8_t green,
@@ -292,9 +293,9 @@ class Color : public sf::Color
            {
             const float k = (in.l <= 0.5f) ? in.l * (1.0f+in.s) : in.l+in.s - in.l*in.s;
             const float ch0 = 2.0f*in.l - k;
-            r = static_cast<std::uint8_t>(chn_max * hue2rgb(in.h + 120.0f, k, ch0));
-            g = static_cast<std::uint8_t>(chn_max * hue2rgb(in.h         , k, ch0));
-            b = static_cast<std::uint8_t>(chn_max * hue2rgb(in.h - 120.0f, k, ch0));
+            r = static_cast<std::uint8_t>(std::lround(chn_max * hue2rgb(in.h + 120.0f, k, ch0)));
+            g = static_cast<std::uint8_t>(std::lround(chn_max * hue2rgb(in.h         , k, ch0)));
+            b = static_cast<std::uint8_t>(std::lround(chn_max * hue2rgb(in.h - 120.0f, k, ch0)));
            }
        }
 

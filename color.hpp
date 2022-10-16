@@ -6,8 +6,9 @@
 #include <cassert>
 #include <cstdint> // std::uint32_t, std::uint8_t
 #include <limits> // std::numeric_limits
-#include <cmath> // std::fmod
+#include <cmath> // std::fmod, std::lround
 #include <algorithm> // std::minmax
+#include <tuple>
 #include <fmt/core.h> // fmt::format
 #include <fmt/color.h> // fmt::color::*
 
@@ -75,9 +76,7 @@ class Color
       , b(static_cast<std::uint8_t>((rgba & 0x0000ff00) >> 8))
       , a(static_cast<std::uint8_t>(rgba & 0x000000ff)) {}
 
-    //constexpr Color(const float h,
-    //                const float s,
-    //                const float l,
+    //constexpr Color(const std::tuple<float,float,float> hsl
     //                const float opacity =1.0f) noexcept
     //  : a(static_cast<std::uint8_t>(opacity * static_cast<float>(rgb_t::max)))
     //   {
@@ -386,9 +385,9 @@ class Color
            {
             const float k = (in.l <= 0.5f) ? in.l * (1.0f+in.s) : in.l+in.s - in.l*in.s;
             const float ch0 = 2.0f*in.l - k;
-            r = static_cast<std::uint8_t>(chn_max * hue2rgb(in.h + 120.0f, k, ch0));
-            g = static_cast<std::uint8_t>(chn_max * hue2rgb(in.h         , k, ch0));
-            b = static_cast<std::uint8_t>(chn_max * hue2rgb(in.h - 120.0f, k, ch0));
+            r = static_cast<std::uint8_t>(std::lround(chn_max * hue2rgb(in.h + 120.0f, k, ch0)));
+            g = static_cast<std::uint8_t>(std::lround(chn_max * hue2rgb(in.h         , k, ch0)));
+            b = static_cast<std::uint8_t>(std::lround(chn_max * hue2rgb(in.h - 120.0f, k, ch0)));
            }
        }
 

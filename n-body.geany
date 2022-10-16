@@ -28,13 +28,8 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=5
-FILE_NAME_0=4417;C++;0;EUTF-8;0;1;0;%2Fhome%2Fmat%2Fdev%2Fn-body%2Fn-body.cpp;0;4
-FILE_NAME_1=2833;C++;0;EUTF-8;0;1;0;%2Fhome%2Fmat%2Fdev%2Fn-body%2Funiverse.hpp;0;4
-FILE_NAME_2=5298;C++;0;EUTF-8;0;1;0;%2Fhome%2Fmat%2Fdev%2Fn-body%2Fbody.hpp;0;4
-FILE_NAME_3=5637;C++;0;EUTF-8;0;1;0;%2Fhome%2Fmat%2Fdev%2Fn-body%2Fsfml-addons.hpp;0;4
-FILE_NAME_4=8118;C++;0;EUTF-8;0;1;0;%2Fhome%2Fmat%2Fdev%2Fn-body%2Fsfml-addons-color.hpp;0;4
-FILE_NAME_5=16072;C++;0;EUTF-8;0;1;0;%2Fhome%2Fmat%2Fdev%2Fn-body%2Fcolor.hpp;0;4
+current_page=0
+FILE_NAME_0=744;C++;0;EUTF-8;0;1;0;%2Fhome%2Fmat%2Fdev%2Fn-body%2Fn-body.cpp;0;4
 
 [VTE]
 last_dir=/home/mat/dev/n-body
