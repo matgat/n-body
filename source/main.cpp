@@ -1,8 +1,9 @@
 #include <array>
 #include <algorithm> // std::clamp
 #include <chrono> // std::chrono::*
-#include <fmt/core.h> // fmt::*
-#include <fmt/color.h> // fmt::color::*
+#include <iostream>
+#include <format>
+
 #include <SFML/Graphics.hpp>
 
 #include "sfml-addons.hpp" // sfadd::*
@@ -87,13 +88,13 @@ int main()
     sf::Text text;
     sf::Font font;
 
-  #if defined(_WIN32) || defined(_WIN64)
-    if( !font.loadFromFile("c:/windows/fonts/DejaVuSansCondensed.ttf") )
-  #elif defined(__unix__) || defined(__linux__)
-    if( !font.loadFromFile("/usr/share/fonts/TTF/DejaVuSansCondensed.ttf") )
+  #if defined(_WIN32) or defined(_WIN64)
+    if( not font.loadFromFile("c:/windows/fonts/DejaVuSansCondensed.ttf") )
+  #elif defined(__unix__) or defined(__linux__)
+    if( not font.loadFromFile("/usr/share/fonts/TTF/DejaVuSansCondensed.ttf") )
   #endif
        {
-        fmt::print(fmt::emphasis::bold | fg(fmt::color::red), "Cannot load font");
+        std::cout << "Cannot load font\n";
        }
     text.setFont(font);
     text.setFillColor(sf::Color::White);
@@ -145,7 +146,7 @@ int main()
                     //{
                     //const sf::Vector2f p{ window.mapPixelToCoords({event.mouseMove.x, event.mouseMove.y}) };
                     //const sf::FloatRect r = view.rect();
-                    //dbg_text.setString(fmt::format("{};{} = {:.3f};{:.3f}\n"
+                    //dbg_text.setString(std::format("{};{} = {:.3f};{:.3f}\n"
                     //                               "view {:.3f};{:.3f} {:.3f}x{:.3f}",
                     //                   event.mouseMove.x, event.mouseMove.y, p.x, p.y,
                     //                   r.x, r.y, r.x, r.y));
@@ -180,7 +181,7 @@ int main()
         window.clear();
         view.draw_grid(100,100,sf::Color{50,50,50});
 
-        text.setString(fmt::format("E={:.1f}  dt={:.1f}ms  t={:.0f}s", universe.total_energy(), 1E3*duration.count(), universe.time()));
+        text.setString(std::format("E={:.1f}  dt={:.1f}ms  t={:.0f}s", universe.total_energy(), 1E3*duration.count(), universe.time()));
         text.setPosition( window.mapPixelToCoords({0,0}) );
         //text.setCharacterSize(14);
 
@@ -196,4 +197,3 @@ int main()
 
     return 0;
 }
-

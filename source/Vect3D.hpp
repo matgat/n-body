@@ -1,11 +1,11 @@
-#ifndef GUARD_vect3d_hpp
-#define GUARD_vect3d_hpp
+#pragma once
 //  ---------------------------------------------
 //  A 3D physical vector
 //  ---------------------------------------------
-#include <cassert> // assert
-#include <ostream> // std::ostream
-#include <fmt/format.h> // fmt::formatter
+#include <cassert>
+#include <ostream>
+#include <format>
+
 #include "math-utilities.hpp" // math::*
 
 
@@ -26,7 +26,7 @@ struct Vect3D final
     //-----------------------------------------------------------------------
     [[nodiscard]] bool operator==(const Vect3D& other) const noexcept
        {
-        return math::is_zero(x-other.x) && math::is_zero(y-other.y) && math::is_zero(z-other.z);
+        return math::is_zero(x-other.x) and math::is_zero(y-other.y) and math::is_zero(z-other.z);
        }
 
     //-----------------------------------------------------------------------
@@ -72,7 +72,7 @@ struct Vect3D final
     [[nodiscard]] Vect3D& normalize() noexcept
        {
         const double len{ norm() };
-        assert( !math::is_zero(len) );
+        assert( not math::is_zero(len) );
         x/=len;
         y/=len;
         z/=len;
@@ -81,7 +81,7 @@ struct Vect3D final
     [[nodiscard]] Vect3D get_versor() const noexcept
        {
         const double len{ norm() };
-        assert( !math::is_zero(len) );
+        assert( not math::is_zero(len) );
         return Vect3D{x/len, y/len, z/len};
        }
 
@@ -106,7 +106,7 @@ struct Vect3D final
     //-----------------------------------------------------------------------
     [[nodiscard]] Vect3D component_on(const Vect3D& other) const noexcept
        {
-        assert( !other.is_null() );
+        assert( not other.is_null() );
         return (dot_prod_with(other) / other.norm2()) * other;
        }
 
@@ -120,18 +120,10 @@ struct Vect3D final
 
 
 ////////////////////////////////////////////////////////////////////////
-template<> struct fmt::formatter<Vect3D> final
+template <> struct std::formatter<Vect2D> : std::formatter<std::string>
 {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) noexcept { return ctx.begin(); }
-
-    template<typename FormatContext>
-    auto format(const Vect3D& v, FormatContext& ctx) const
+    auto format(const Vect2D v, std::format_context& ctx) const
        {
-        return fmt::format_to(ctx.out(), "{:.6g},{:.6g},{:.6g}", v.x, v.y, v.z);
+        return std::formatter<std::string>::format( std::format("{:.6g},{:.6g},{:.6g}", v.x, v.y, v.z), ctx);
        }
 };
-
-
-//---- end unit --------------------------------------------------------------
-#endif

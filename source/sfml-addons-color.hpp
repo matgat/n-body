@@ -1,5 +1,4 @@
-#ifndef GUARD_sfml_addons_color_hpp
-#define GUARD_sfml_addons_color_hpp
+#pragma once
 //  ---------------------------------------------
 //  An enhanced color class for SFML
 //  ---------------------------------------------
@@ -8,8 +7,7 @@
 #include <limits> // std::numeric_limits
 #include <cmath> // std::fmod, std::lround
 #include <algorithm> // std::minmax
-#include <fmt/core.h> // fmt::format
-#include <fmt/color.h> // fmt::color::*
+#include <format>
 
 #include <SFML/Graphics/Color.hpp> // sf::Color
 
@@ -21,20 +19,19 @@ namespace sfadd //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 /////////////////////////////////////////////////////////////////////////////
 class Color : public sf::Color
 {
- private:
     struct hsl_t
        {
         float h, s, l;
-        [[nodiscard]] static constexpr bool is_zero(const float v) noexcept { return v>(-0.01f) && v<0.01f; }
-        [[nodiscard]] constexpr friend bool operator==(const hsl_t& l, const hsl_t& r) noexcept { return is_zero(l.h-r.h) && is_zero(l.s-r.s) && is_zero(l.l-r.l); }
-        [[nodiscard]] constexpr bool is_equal_to(const std::initializer_list<float>& r) const noexcept { return r.size()==3 && is_zero(h-*(r.begin())) && is_zero(s-*(r.begin()+1)) && is_zero(l-*(r.begin()+2)); }
+        [[nodiscard]] static constexpr bool is_zero(const float v) noexcept { return v>(-0.01f) and v<0.01f; }
+        [[nodiscard]] constexpr friend bool operator==(const hsl_t& l, const hsl_t& r) noexcept { return is_zero(l.h-r.h) and is_zero(l.s-r.s) and is_zero(l.l-r.l); }
+        [[nodiscard]] constexpr bool is_equal_to(const std::initializer_list<float>& lst) const noexcept { return lst.size()==3 and is_zero(h-*(lst.begin())) and is_zero(s-*(lst.begin()+1)) and is_zero(l-*(lst.begin()+2)); }
         [[nodiscard]] static constexpr float clamp(const float val) noexcept
            {
             if(val>=1.0f) return 1.0f;
             else if(val<=0.0f) return 0.0f;
             return val;
            }
-        [[nodiscard]] std::string string() const { return fmt::format("({:.2f},{:.2f},{:.2f})",h,s,l); }
+        [[nodiscard]] std::string string() const { return std::format("({:.2f},{:.2f},{:.2f})",h,s,l); }
        };
 
     struct rgb_t
@@ -52,8 +49,8 @@ class Color : public sf::Color
             return d<v ? v-d : std::numeric_limits<uint8_t>::min();
            }
 
-        [[nodiscard]] constexpr friend bool operator==(const rgb_t& l, const rgb_t& r) noexcept { return l.r==r.r && l.g==r.g && l.b==r.b; }
-        [[nodiscard]] constexpr bool is_equal_to(const std::initializer_list<std::uint8_t>& lst) const noexcept { return lst.size()==3 && r==*(lst.begin()) && g==*(lst.begin()+1) && b==*(lst.begin()+2); }
+        [[nodiscard]] constexpr friend bool operator==(const rgb_t& l, const rgb_t& r) noexcept { return l.r==r.r and l.g==r.g and l.b==r.b; }
+        [[nodiscard]] constexpr bool is_equal_to(const std::initializer_list<std::uint8_t>& lst) const noexcept { return lst.size()==3 and r==*(lst.begin()) and g==*(lst.begin()+1) and b==*(lst.begin()+2); }
        };
 
  public:
@@ -275,7 +272,7 @@ class Color : public sf::Color
     // Convert color map HSL -> RGB
     static constexpr void hsl2rgb(const hsl_t in, std::uint8_t& r, std::uint8_t& g, std::uint8_t& b) noexcept
        {
-        assert(in.s>=0.0f && in.s<=1.0f && in.l>=0.0f && in.l<=1.0f);
+        assert(in.s>=0.0f and in.s<=1.0f and in.l>=0.0f and in.l<=1.0f);
         const auto hue2rgb = [](float h, const float k, float ch) noexcept -> float
            {
             h = std::fmod(h, 360.0f);
@@ -299,10 +296,9 @@ class Color : public sf::Color
            }
        }
 
-
     // String representation
-    [[nodiscard]] /*constexpr*/ std::string rgba_string() const { return fmt::format("({},{},{},{})",r,g,b,a); }
-    [[nodiscard]] /*constexpr*/ std::string hex_string() const { return fmt::format("{:#08x}", toInteger()); }
+    [[nodiscard]] /*constexpr*/ std::string rgba_string() const { return std::format("({},{},{},{})",r,g,b,a); }
+    [[nodiscard]] /*constexpr*/ std::string hex_string() const { return std::format("{:#08x}", toInteger()); }
 };
 
 
@@ -310,43 +306,33 @@ class Color : public sf::Color
 
 
 
+
+
 /////////////////////////////////////////////////////////////////////////////
-#ifdef TEST /////////////////////////////////////////////////////////////////
-int main()
-{
-    int errors = 0;
+#ifdef TEST_UNITS ///////////////////////////////////////////////////////////
+static ut::suite<"Color"> color_tests = []
+{////////////////////////////////////////////////////////////////////////////
 
-    Color c(254,58,58); // Reddish
+ut::test("sfadd::Color") = []
+   {
+    ut::test("hsl components") = []
+       {
+        sfadd::Color c(254,58,58); // Reddish
+        const auto hsl = c.get_hsl();
 
-    fmt::print("hsl components... ");
-    if( const auto hsl = c.get_hsl(); hsl.is_equal_to({0.00f,0.99f,0.61f}) )
-       {
-        fmt::print(fg(fmt::color::green), "ok hsl={}\n",hsl.string());
-       }
-    else
-       {
-        fmt::print(fmt::emphasis::bold | fg(fmt::color::red), "Wrong hsl={}\n",hsl.string());
-        ++errors;
-       }
+        ut::expect( hsl.is_equal_to( {0.00f,0.99f,0.61f} ) ) << hsl.string();
+       };
 
-    fmt::print("hue setting... ");
-    if( const auto hsl = c.set_hue(31.5f).get_hsl();
-        hsl.is_equal_to({31.5f,0.99f,0.61f}) && c.has_same_rgb_of({254,163,58}) )
+    ut::test("hue setting") = []
        {
-        fmt::print(fg(fmt::color::green), "ok hsl={}, rgba={}\n",hsl.string(),c.rgba_string());
-       }
-    else
-       {
-        fmt::print(fmt::emphasis::bold | fg(fmt::color::red), "Wrong hsl={}, rgba={}\n",hsl.string(),c.rgba_string());
-        ++errors;
-       }
+        sfadd::Color c(254,58,58); // Reddish
+        const auto hsl = c.set_hue(31.5f).get_hsl()
+        
+        ut::expect( hsl.is_equal_to({31.5f,0.99f,0.61f}) ) << hsl.string();
+        ut::expect( c.has_same_rgb_of({254,163,58}) ) << c.rgba_string();
+       };
+   };
 
-    return errors;
-}
-#endif //////////////////////////////////////////////////////////////////////
+};///////////////////////////////////////////////////////////////////////////
+#endif // TEST_UNITS ////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-
-
-
-//---- end unit -------------------------------------------------------------
-#endif

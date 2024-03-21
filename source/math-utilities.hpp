@@ -1,5 +1,4 @@
-#ifndef GUARD_math_utilities_hpp
-#define GUARD_math_utilities_hpp
+#pragma once
 //  ---------------------------------------------
 //  Common math facilities
 //  ---------------------------------------------
@@ -29,7 +28,3 @@ constexpr inline double square(const double x) noexcept { return x*x; }
 constexpr inline double cube(const double x) noexcept { return x*x*x; }
 
 }//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-
-//---- end unit --------------------------------------------------------------
-#endif

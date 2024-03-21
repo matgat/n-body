@@ -1,5 +1,4 @@
-#ifndef GUARD_body_hpp
-#define GUARD_body_hpp
+#pragma once
 //  ---------------------------------------------
 //  A spherical body for n-body simulation
 //  ---------------------------------------------
@@ -103,8 +102,7 @@ template<class Vect> class SphericalBody final
             const double vrₙ = dot_prod(v⃗r,n⃗);
             if( vrₙ>1E-3 )
                {// Collision detected!
-                //fmt::print(fmt::emphasis::bold | fg(fmt::color::red), "Collision\n");
-                //fmt::print("dist:{:.6g} v⃗r:{} vrₙ:{:.6g}\n",dist, v⃗r, vrₙ); std::fflush(nullptr);
+                //dbg("Collision\n"dist:{:.6g} v⃗r:{} vrₙ:{:.6g}\n",dist, v⃗r, vrₙ);
                 // Should backtrack time to know the exact collision moment
                 // React to collision
                 //const Vect v⃗rₙ = vrₙ * n⃗; // Normal component of relative speed
@@ -137,6 +135,3 @@ template<class Vect> class SphericalBody final
          i_spd, // Speed [<space>/<time>]
          i_acc; // Acceleration [<space>/<time>²]
 };
-
-//---- end unit --------------------------------------------------------------
-#endif

@@ -6,16 +6,65 @@ A fun project to perform N-body simulation.
 _________________________________________________________________________
 ## Build
 ```
-# pacman -S fmt sfml
 $ git clone https://github.com/matgat/n-body.git
-$ cd n-body
-$ clang++ -std=c++2b -O3 -Wall -Wextra -Wpedantic -Wconversion -Wfatal-errors -lfmt -lsfml-graphics -lsfml-window -lsfml-system "n-body.cpp" -o "n-body"
 ```
-On windows, using Visual Studio, the `sfml` library
-dependency can be conveniently handled with `vcpkg`:
+You need a `c++20` compliant toolchain.
+Check the operations in the python script:
+
+### linux
+Launch `make` directly:
+
+```sh
+$ cd n-body/build
+$ make
 ```
-> git clone https://github.com/Microsoft/vcpkg.git
-> .\vcpkg\bootstrap-vcpkg.bat -disableMetrics
-> .\vcpkg\vcpkg integrate install
-> .\vcpkg\vcpkg install fmt:x64-windows
+
+To run unit tests:
+
+```sh
+$ make test
 ```
+
+> [!TIP]
+> Install the dependency `sfml` using
+> your package manager:
+>
+> ```sh
+> $ sudo pacman -S sfml
+> ```
+>
+> or
+>
+> ```sh
+> $ sudo apt install -y libsfml-dev
+> ```
+
+
+### Windows
+
+On Windows you need Microsoft Visual Studio 2022 (Community Edition).
+Once you have `msbuild` visible in path, you can launch the build from the command line:
+
+```bat
+> msbuild build/n-body.vcxproj -t:Rebuild -p:Configuration=Release -p:Platform=x64
+```
+
+> [!TIP]
+> Install the dependency `sfml` using `vcpkg`:
+>
+> ```bat
+> > git clone https://github.com/Microsoft/vcpkg.git
+> > cd .\vcpkg
+> > .\bootstrap-vcpkg.bat -disableMetrics
+> > .\vcpkg integrate install
+> > .\vcpkg install sfml:x64-windows
+> ```
+>
+> To just update the `vcpkg` libraries:
+>
+> ```bat
+> > cd .\vcpkg
+> > git pull
+> > .\bootstrap-vcpkg.bat -disableMetrics
+> > .\vcpkg upgrade --no-dry-run
+> ```
