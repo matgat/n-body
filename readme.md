@@ -5,11 +5,12 @@ A fun project to perform N-body simulation.
 
 _________________________________________________________________________
 ## Build
-```
-$ git clone https://github.com/matgat/n-body.git
-```
 You need a `c++20` compliant toolchain.
-Check the operations in the python script:
+
+```sh
+$ git clone https://github.com/matgat/n-body.git
+$ python n-body/build/build.py
+```
 
 ### linux
 Launch `make` directly:

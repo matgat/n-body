@@ -9,7 +9,7 @@ TARGET = $(BLDDIR)/$(PRJNAME)
 TEST_MAIN = ../test/test.cpp
 TEST_TARGET = $(BLDDIR)/$(PRJNAME)-test
 
-CXX = clang++
+CXX = g++
 CXXFLAGS = -std=c++23 -fno-rtti -O3 $(addprefix -I, $(INCLUDEDIRS))
 CXXFLAGS += -march=native
 CXXFLAGS += -Wall -Wextra -Wpedantic -Wfatal-errors -Werror
